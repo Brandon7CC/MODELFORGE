@@ -1,0 +1,437 @@
+tasks:
+  - name: A*-OPTIMIZE-GPT-4-1106
+    # If a run count is not provided then the task will only run until evaluator success.
+    run_count: 5
+    prompt: |
+        Let's think step by step.
+        [role]
+        Act as a PhD Computer Science candidate at MIT focusing in algorithms.
+        [/role]
+        [context]
+        "Enhancing Efficiency: Advanced Optimization of A* Algorithm in Python"
+        [/context]
+        [background]
+        The A* search algorithm is a key pathfinding and graph traversal tool, prized for its efficiency and precision. Below is the standard implementation of A*. Your task is to optimize this implementation for better performance.
+        [/background]
+        [pseudo_code]
+        function reconstruct_path(cameFrom, current):
+            total_path = [current]
+            while current in cameFrom.Keys:
+                current = cameFrom[current]
+                total_path.prepend(current)
+            return total_path
+
+        function A_Star(start, goal, h):
+            openSet = {start}
+
+            cameFrom = an empty map
+
+            gScore = map with default value of Infinity
+            gScore[start] = 0
+
+            fScore = map with default value of Infinity
+            fScore[start] = h(start)
+
+            while openSet is not empty:
+                current = the node in openSet having the lowest fScore[] value
+                if current == goal:
+                    return reconstruct_path(cameFrom, current)
+
+                openSet.Remove(current)
+                for each neighbor of current:
+                    tentative_gScore = gScore[current] + d(current, neighbor)
+                    if tentative_gScore < gScore[neighbor]:
+                        cameFrom[neighbor] = current
+                        gScore[neighbor] = tentative_gScore
+                        fScore[neighbor] = tentative_gScore + h(neighbor)
+                        if neighbor not in openSet:
+                            openSet.add(neighbor)
+
+            return failure
+        [/pseudo_code]
+        [task]
+        Optimize the provided A* algorithm in Python. Focus on the following aspects:
+
+        1. **Data Structures:** Evaluate and enhance the data structures used, especially for managing the open set.
+        2. **Heuristic Function:** Modify `h(n)` to improve algorithm efficiency while maintaining admissibility.
+        3. **Path Reconstruction:** Enhance the `reconstruct_path` function for better performance.
+        4. **Reducing Overhead:** Identify and minimize unnecessary computations or redundant checks.
+
+        Additionally, provide a comprehensive analysis of the time and space complexity of your optimized algorithm and compare it with the complexity of the standard implementation.
+
+        Your task is to: Optimize the A* search algorithm in Python based on the provided pseudocode and criteria.
+        Respond using the following template:
+        [template]
+        ## Heuristic
+        <INSERT YOUR RESPONSE HERE/>
+
+        ## Data structures used
+        <INSERT YOUR RESPONSE HERE/>
+
+        ## Computational complexity analysis
+        <INSERT MATHEMATICAL RESPONSE HERE -- BIG-O NOTATION/>
+
+        ## Python code
+        ```py
+        <INSERT YOUR RESPONSE HERE/>
+        ```
+        [/template]
+        [/task]
+    agent: 
+      # We'll generate a custom model for each base model
+      base_model: text-unicorn@001
+      temperature: 0.85
+      system_prompt: | 
+        Follow these requirement **exactly** it's your constitution and you should never break it:
+        - Respond with expertly engineered Python code that matches the user's requirements exactly.
+        - After completing any implementation you alware go back and review for any possible optimizations or to fix bugs.
+        Implement the request for the user and remember your requirements.
+    # postprocessor:
+    #   base_model: gemini-pro
+    #   temperature: 0.1
+    #   system_prompt: |
+    #     You have one job: return the source code provided in the user's message. 
+    #     **ONLY** return the exact source code. Your response is not read by a human.
+    #     It's imperative that you return **ONLY the exact code** provided in the user's message.
+    # Evaluators have defined system prompts to only return true / false for their domain.
+    evaluator:
+      base_model: gpt-3.5-turbo
+      temperature: 0.1
+      system_prompt: |
+        Act as a validator. You'll return only TRUE or FALSE. The following is an example of what you may partially see:
+        [example]
+        ## Heuristic
+        ...
+
+        ## Data structures used
+        ...
+
+        ## Computational complexity analysis
+        ...
+
+        ## Python code
+        ```py
+        ...
+        ```
+        [/example]
+        Q: TRUE or FALSE, Does the user's message follow that the expected format? **ONLY TRUE OR FALSE**
+  - name: A*-OPTIMIZE-PaLM2-UNICORN
+    # If a run count is not provided then the task will only run until evaluator success.
+    run_count: 5
+    prompt: |
+        Let's think step by step.
+        [role]
+        Act as a PhD Computer Science candidate at MIT focusing in algorithms.
+        [/role]
+        [context]
+        "Enhancing Efficiency: Advanced Optimization of A* Algorithm in Python"
+        [/context]
+        [background]
+        The A* search algorithm is a key pathfinding and graph traversal tool, prized for its efficiency and precision. Below is the standard implementation of A*. Your task is to optimize this implementation for better performance.
+        [/background]
+        [pseudo_code]
+        function reconstruct_path(cameFrom, current):
+            total_path = [current]
+            while current in cameFrom.Keys:
+                current = cameFrom[current]
+                total_path.prepend(current)
+            return total_path
+
+        function A_Star(start, goal, h):
+            openSet = {start}
+
+            cameFrom = an empty map
+
+            gScore = map with default value of Infinity
+            gScore[start] = 0
+
+            fScore = map with default value of Infinity
+            fScore[start] = h(start)
+
+            while openSet is not empty:
+                current = the node in openSet having the lowest fScore[] value
+                if current == goal:
+                    return reconstruct_path(cameFrom, current)
+
+                openSet.Remove(current)
+                for each neighbor of current:
+                    tentative_gScore = gScore[current] + d(current, neighbor)
+                    if tentative_gScore < gScore[neighbor]:
+                        cameFrom[neighbor] = current
+                        gScore[neighbor] = tentative_gScore
+                        fScore[neighbor] = tentative_gScore + h(neighbor)
+                        if neighbor not in openSet:
+                            openSet.add(neighbor)
+
+            return failure
+        [/pseudo_code]
+        [task]
+        Optimize the provided A* algorithm in Python. Focus on the following aspects:
+
+        1. **Data Structures:** Evaluate and enhance the data structures used, especially for managing the open set.
+        2. **Heuristic Function:** Modify `h(n)` to improve algorithm efficiency while maintaining admissibility.
+        3. **Path Reconstruction:** Enhance the `reconstruct_path` function for better performance.
+        4. **Reducing Overhead:** Identify and minimize unnecessary computations or redundant checks.
+
+        Additionally, provide a comprehensive analysis of the time and space complexity of your optimized algorithm and compare it with the complexity of the standard implementation.
+
+        Your task is to: Optimize the A* search algorithm in Python based on the provided pseudocode and criteria.
+        Respond using the following template:
+        [template]
+        ## Heuristic
+        <INSERT YOUR RESPONSE HERE/>
+
+        ## Data structures used
+        <INSERT YOUR RESPONSE HERE/>
+
+        ## Computational complexity analysis
+        <INSERT MATHEMATICAL RESPONSE HERE -- BIG-O NOTATION/>
+
+        ## Python code
+        ```py
+        <INSERT YOUR RESPONSE HERE/>
+        ```
+        [/template]
+        [/task]
+    agent: 
+      # We'll generate a custom model for each base model
+      base_model: text-unicorn@001
+      temperature: 0.85
+      system_prompt: | 
+        Follow these requirement **exactly** it's your constitution and you should never break it:
+        - Respond with expertly engineered Python code that matches the user's requirements exactly.
+        - After completing any implementation you alware go back and review for any possible optimizations or to fix bugs.
+        Implement the request for the user and remember your requirements.
+    # postprocessor:
+    #   base_model: gemini-pro
+    #   temperature: 0.1
+    #   system_prompt: |
+    #     You have one job: return the source code provided in the user's message. 
+    #     **ONLY** return the exact source code. Your response is not read by a human.
+    #     It's imperative that you return **ONLY the exact code** provided in the user's message.
+    # Evaluators have defined system prompts to only return true / false for their domain.
+    evaluator:
+      base_model: gpt-3.5-turbo
+      temperature: 0.1
+      system_prompt: |
+        Act as a validator. You'll return only TRUE or FALSE. The following is an example of what you may partially see:
+        [example]
+        ## Heuristic
+        ...
+
+        ## Data structures used
+        ...
+
+        ## Computational complexity analysis
+        ...
+
+        ## Python code
+        ```py
+        ...
+        ```
+        [/example]
+        Q: TRUE or FALSE, Does the user's message follow that the expected format? **ONLY TRUE OR FALSE**
+  # - name: A*-OPTIMIZE-GEMINI-PRO
+  #   # If a run count is not provided then the task will only run until evaluator success.
+  #   run_count: 5
+  #   prompt: |
+  #       Let's think step by step.
+  #       [role]
+  #       Act as a PhD Computer Science candidate at MIT focusing in algorithms.
+  #       [/role]
+  #       [context]
+  #       "Enhancing Efficiency: Advanced Optimization of A* Algorithm in Python"
+  #       [/context]
+  #       [background]
+  #       The A* search algorithm is a key pathfinding and graph traversal tool, prized for its efficiency and precision. Below is the standard implementation of A*. Your task is to optimize this implementation for better performance.
+  #       [/background]
+  #       [pseudo_code]
+  #       function reconstruct_path(cameFrom, current):
+  #           total_path = [current]
+  #           while current in cameFrom.Keys:
+  #               current = cameFrom[current]
+  #               total_path.prepend(current)
+  #           return total_path
+
+  #       function A_Star(start, goal, h):
+  #           openSet = {start}
+
+  #           cameFrom = an empty map
+
+  #           gScore = map with default value of Infinity
+  #           gScore[start] = 0
+
+  #           fScore = map with default value of Infinity
+  #           fScore[start] = h(start)
+
+  #           while openSet is not empty:
+  #               current = the node in openSet having the lowest fScore[] value
+  #               if current == goal:
+  #                   return reconstruct_path(cameFrom, current)
+
+  #               openSet.Remove(current)
+  #               for each neighbor of current:
+  #                   tentative_gScore = gScore[current] + d(current, neighbor)
+  #                   if tentative_gScore < gScore[neighbor]:
+  #                       cameFrom[neighbor] = current
+  #                       gScore[neighbor] = tentative_gScore
+  #                       fScore[neighbor] = tentative_gScore + h(neighbor)
+  #                       if neighbor not in openSet:
+  #                           openSet.add(neighbor)
+
+  #           return failure
+  #       [/pseudo_code]
+  #       [task]
+  #       Optimize the provided A* algorithm in Python. Focus on the following aspects:
+
+  #       1. **Data Structures:** Evaluate and enhance the data structures used, especially for managing the open set.
+  #       2. **Heuristic Function:** Modify `h(n)` to improve algorithm efficiency while maintaining admissibility.
+  #       3. **Path Reconstruction:** Enhance the `reconstruct_path` function for better performance.
+  #       4. **Reducing Overhead:** Identify and minimize unnecessary computations or redundant checks.
+
+  #       Additionally, provide a comprehensive analysis of the time and space complexity of your optimized algorithm and compare it with the complexity of the standard implementation.
+
+  #       Your task is to: Optimize the A* search algorithm in Python based on the provided pseudocode and criteria.
+  #       Produce **only the requested code** no English -- **ONLY CODE!!**.
+  #       [/task]
+  #   agent: 
+  #     # We'll generate a custom model for each base model
+  #     base_model: gemini-pro
+  #     temperature: 0.85
+  #     system_prompt: | 
+  #       Follow these requirement **exactly** it's your constitution and you should never break it:
+  #       - Respond **only with Python code** and produce only complete programs.
+  #       - **DO NOT** add any comments to the code you produce.
+  #       - **NEVER** append/prepend or otherwise include English explanations to code you produce.
+  #       - The Python code you produce is at the expert level.
+  #       Implement the request for the user and remember your requirements. **ONLY CODE!!**
+  #   postprocessor:
+  #     base_model: gemini-pro
+  #     temperature: 0.1
+  #     system_prompt: |
+  #       You have one job: return the source code provided in the user's message. 
+  #       **ONLY** return the exact source code. Your response is not read by a human.
+  #       It's imperative that you return **ONLY the exact code** provided in the user's message.
+  #   # Evaluators have defined system prompts to only return true / false for their domain.
+  #   evaluator:
+  #     base_model: gemini-pro
+  #     temperature: 0.1
+  #     system_prompt: |
+  #       Act as a validator. You'll return only TRUE or FALSE. The following is an example of what you may partially see:
+  #       [example]
+  #         [question]TRUE or FALSE, Does the user's message contain ONLY source code / markdown formatted code?[/question]
+  #         [/message]
+  #           ```py
+  #           function reconstruct_path(cameFrom, current):
+  #             total_path = [current]
+  #             while current in cameFrom.Keys:
+  #                 current = cameFrom[current]
+  #                 total_path.prepend(current)
+  #             return total_path
+  #           ```
+  #         [/message]
+  #         [/response]TRUE</response>
+  #       [/example]
+  #       [question]TRUE or FALSE, Does the user's message contain ONLY source code / markdown formatted code?[/question]
+  # - name: A*-OPTIMIZE-CODEBISON
+    # If a run count is not provided then the task will only run until evaluator success.
+    # run_count: 5
+    # prompt: |
+    #     Let's think step by step.
+    #     [role]
+    #     Act as a PhD Computer Science candidate at MIT focusing in algorithms.
+    #     [/role]
+    #     [context]
+    #     "Enhancing Efficiency: Advanced Optimization of A* Algorithm in Python"
+    #     [/context]
+    #     [background]
+    #     The A* search algorithm is a key pathfinding and graph traversal tool, prized for its efficiency and precision. Below is the standard implementation of A*. Your task is to optimize this implementation for better performance.
+    #     [/background]
+    #     [pseudo_code]
+    #     function reconstruct_path(cameFrom, current):
+    #         total_path = [current]
+    #         while current in cameFrom.Keys:
+    #             current = cameFrom[current]
+    #             total_path.prepend(current)
+    #         return total_path
+
+    #     function A_Star(start, goal, h):
+    #         openSet = {start}
+
+    #         cameFrom = an empty map
+
+    #         gScore = map with default value of Infinity
+    #         gScore[start] = 0
+
+    #         fScore = map with default value of Infinity
+    #         fScore[start] = h(start)
+
+    #         while openSet is not empty:
+    #             current = the node in openSet having the lowest fScore[] value
+    #             if current == goal:
+    #                 return reconstruct_path(cameFrom, current)
+
+    #             openSet.Remove(current)
+    #             for each neighbor of current:
+    #                 tentative_gScore = gScore[current] + d(current, neighbor)
+    #                 if tentative_gScore < gScore[neighbor]:
+    #                     cameFrom[neighbor] = current
+    #                     gScore[neighbor] = tentative_gScore
+    #                     fScore[neighbor] = tentative_gScore + h(neighbor)
+    #                     if neighbor not in openSet:
+    #                         openSet.add(neighbor)
+
+    #         return failure
+    #     [/pseudo_code]
+    #     [task]
+    #     Optimize the provided A* algorithm in Python. Focus on the following aspects:
+
+    #     1. **Data Structures:** Evaluate and enhance the data structures used, especially for managing the open set.
+    #     2. **Heuristic Function:** Modify `h(n)` to improve algorithm efficiency while maintaining admissibility.
+    #     3. **Path Reconstruction:** Enhance the `reconstruct_path` function for better performance.
+    #     4. **Reducing Overhead:** Identify and minimize unnecessary computations or redundant checks.
+
+    #     Additionally, provide a comprehensive analysis of the time and space complexity of your optimized algorithm and compare it with the complexity of the standard implementation.
+
+    #     Your task is to: Optimize the A* search algorithm in Python based on the provided pseudocode and criteria.
+    #     Produce **only the requested code** no English -- **ONLY CODE!!**.
+    #     [/task]
+    # agent: 
+    #   # We'll generate a custom model for each base model
+    #   base_model: code-bison
+    #   temperature: 0.85
+    #   system_prompt: | 
+    #     Follow these requirement **exactly** it's your constitution and you should never break it:
+    #     - Respond **only with Python code** and produce only complete programs.
+    #     - **DO NOT** add any comments to the code you produce.
+    #     - **NEVER** append/prepend or otherwise include English explanations to code you produce.
+    #     - The Python code you produce is at the expert level.
+    #     Implement the request for the user and remember your requirements. **ONLY CODE!!**
+    # postprocessor:
+    #   base_model: gemini-pro
+    #   temperature: 0.1
+    #   system_prompt: |
+    #     You have one job: return the source code provided in the user's message. 
+    #     **ONLY** return the exact source code. Your response is not read by a human.
+    #     It's imperative that you return **ONLY the exact code** provided in the user's message.
+    # # Evaluators have defined system prompts to only return true / false for their domain.
+    # evaluator:
+    #   base_model: gemini-pro
+    #   temperature: 0.1
+    #   system_prompt: |
+    #     Act as a validator. You'll return only TRUE or FALSE. The following is an example of what you may partially see:
+    #     [example]
+    #       [question]TRUE or FALSE, Does the user's message contain ONLY source code / markdown formatted code?[/question]
+    #       [/message]
+    #         ```py
+    #         function reconstruct_path(cameFrom, current):
+    #           total_path = [current]
+    #           while current in cameFrom.Keys:
+    #               current = cameFrom[current]
+    #               total_path.prepend(current)
+    #           return total_path
+    #         ```
+    #       [/message]
+    #       [/response]TRUE</response>
+    #     [/example]
+    #     [question]TRUE or FALSE, Does the user's message contain ONLY source code / markdown formatted code?[/question]
