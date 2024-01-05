@@ -22,19 +22,25 @@ import os
 
 MAX_FAIL_LIMIT = 10
 
+
 def signal_handler(sig, frame):
     print("Exiting and destroying resources...")
     ModelForge.destroy()
     sys.exit(0)
 
+
 def save_to_file(tasks, filename):
     with open(filename, "w") as file:
-        yaml.dump([task.to_dict() for task in tasks], file)  # Ensure tasks are serializable
+        yaml.dump([task.to_dict() for task in tasks],
+                  file)  # Ensure tasks are serializable
+
 
 def route_tasks(tasks, results_file_path=None):
     if results_file_path is None:
-        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        results_file = expanduser(f"~/modelforge/modelforge_result_{current_datetime}.yaml")
+        current_datetime = datetime.datetime.now().strftime(
+            "%Y-%m-%d_%H-%M-%S")
+        results_file = expanduser(
+            f"~/modelforge/modelforge_result_{current_datetime}.yaml")
     else:
         results_file = results_file_path
 
@@ -44,11 +50,15 @@ def route_tasks(tasks, results_file_path=None):
 
     for task in tasks:
         start_time = time.time()
-        print(f"\n{task.name} with the {task.agent.base_model} model\nPROMPT: \n```\n{task.prompt}```")
+        print(
+            f"\n{task.name} with the {task.agent.base_model} model\nPROMPT: \n```\n{task.prompt}```"
+        )
 
         for iteration in range(1, task.run_count + 1):
             iteration_start_time = time.time()
-            print(f"Executing iteration {iteration}/{task.run_count} ==> {iteration/task.run_count*100}%")
+            print(
+                f"Executing iteration {iteration}/{task.run_count} ==> {iteration/task.run_count*100}%"
+            )
             validated = False
             invalid_responses = 0
 
@@ -57,24 +67,33 @@ def route_tasks(tasks, results_file_path=None):
                 validated = task.execute_and_validate()
                 if not validated:
                     invalid_responses += 1
-                    print(f"❌ Not validated. Trying again... Here's what was completed\n---\n{task.negative_results[-1]}\n---\n")
-                    success_rate = round(len(task.positive_results) / (len(task.positive_results) + len(task.negative_results)) * 100, 2)
+                    print(
+                        f"❌ Not validated. Trying again... Here's what was completed\n---\n{task.negative_results[-1]}\n---\n"
+                    )
+                    success_rate = round(
+                        len(task.positive_results) /
+                        (len(task.positive_results) +
+                         len(task.negative_results)) * 100, 2)
                     print(f"\tSuccess rate: {success_rate}%")
                     if invalid_responses >= MAX_FAIL_LIMIT:
-                        print("!!!! 🚨 WARNING -- Reached maximum invalid responses. Moving to the next task. !!!!")
+                        print(
+                            "!!!! 🚨 WARNING -- Reached maximum invalid responses. Moving to the next task. !!!!"
+                        )
                         break
-                    
+
             end_time = time.time()
-            print(f"✅ ===> {round(end_time - iteration_start_time, 4)}s\n{task.positive_results[-1]}\n<===\n")
+            print(
+                f"✅ ===> {round(end_time - iteration_start_time, 4)}s\n{task.positive_results[-1]}\n<===\n"
+            )
             # Save after each iteration
             save_to_file(tasks, results_file)
             average_time = (end_time - start_time) / task.run_count
         print(f"\t⏰ Average time per iteration: {round(average_time, 4)}s")
-    
+
     print("🤖 Done with all tasking!")
     for task in tasks:
         custom_markdown.render_code_list_as_markdown(task.positive_results)
-    
+
 
 def main():
     """
@@ -89,7 +108,9 @@ def main():
     5. Results will be outputted to STDOUT as well as `research_results_<DATE-Time>.yaml`
     """
     if len(sys.argv) < 2:
-        print("Please provide the path to the researcher_config.yaml file as a command line argument.")
+        print(
+            "Please provide the path to the researcher_config.yaml file as a command line argument."
+        )
         return
 
     config_file = sys.argv[1]
@@ -100,7 +121,7 @@ def main():
         route_tasks(tasks, results_file_path=results_file_path)
     else:
         route_tasks(tasks)
-    
+
 
 if __name__ == "__main__":
     main()
