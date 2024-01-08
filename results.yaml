@@ -1,0 +1,50 @@
+- agent_config: gemini-pro w/0.85 * 1
+  evaluator_config: text-unicorn@001 w/0.1
+  negative_results: []
+  positive_results:
+  - "```python\nimport heapq\n\ndef reconstruct_path(cameFrom, current):\n    path\
+    \ = [current]\n    while current in cameFrom:\n        current = cameFrom[current]\n\
+    \        path.append(current)\n    path.reverse()\n    return path\n\ndef A_Star(start,\
+    \ goal, h, neighbors):\n    openSet = [(h(start), start)]\n    cameFrom = {}\n\
+    \    gScore = {start: 0}\n    fScore = {start: h(start)}\n    while openSet:\n\
+    \        current = heapq.heappop(openSet)[1]\n        if current == goal:\n  \
+    \          return reconstruct_path(cameFrom, current)\n        for neighbor in\
+    \ neighbors(current):\n            tentative_gScore = gScore[current] + 1\n  \
+    \          if neighbor not in gScore or tentative_gScore < gScore[neighbor]:\n\
+    \                cameFrom[neighbor] = current\n                gScore[neighbor]\
+    \ = tentative_gScore\n                fScore[neighbor] = tentative_gScore + h(neighbor)\n\
+    \                heapq.heappush(openSet, (fScore[neighbor], neighbor))\n    return\
+    \ None\n```"
+  post_processor_config: gpt-3.5-turbo w/0.1
+  task_name: A*-OPTIMIZE-GEMINI-PRO
+  task_prompt: "Let's think step by step.\n[role]\nAct as a PhD Computer Science candidate\
+    \ at MIT focusing in algorithms.\n[/role]\n[context]\n\"Enhancing Efficiency:\
+    \ Advanced Optimization of A* Algorithm in Python\"\n[/context]\n[background]\n\
+    The A* search algorithm is a key pathfinding and graph traversal tool, prized\
+    \ for its efficiency and precision. Below is the standard implementation of A*.\
+    \ Your task is to optimize this implementation for better performance.\n[/background]\n\
+    [pseudo_code]\nfunction reconstruct_path(cameFrom, current):\n    total_path =\
+    \ [current]\n    while current in cameFrom.Keys:\n        current = cameFrom[current]\n\
+    \        total_path.prepend(current)\n    return total_path\n\nfunction A_Star(start,\
+    \ goal, h):\n    openSet = {start}\n\n    cameFrom = an empty map\n\n    gScore\
+    \ = map with default value of Infinity\n    gScore[start] = 0\n\n    fScore =\
+    \ map with default value of Infinity\n    fScore[start] = h(start)\n\n    while\
+    \ openSet is not empty:\n        current = the node in openSet having the lowest\
+    \ fScore[] value\n        if current == goal:\n            return reconstruct_path(cameFrom,\
+    \ current)\n\n        openSet.Remove(current)\n        for each neighbor of current:\n\
+    \            tentative_gScore = gScore[current] + d(current, neighbor)\n     \
+    \       if tentative_gScore < gScore[neighbor]:\n                cameFrom[neighbor]\
+    \ = current\n                gScore[neighbor] = tentative_gScore\n           \
+    \     fScore[neighbor] = tentative_gScore + h(neighbor)\n                if neighbor\
+    \ not in openSet:\n                    openSet.add(neighbor)\n\n    return failure\n\
+    [/pseudo_code]\n[task]\nOptimize the provided A* algorithm in Python. Focus on\
+    \ the following aspects:\n\n1. **Data Structures:** Evaluate and enhance the data\
+    \ structures used, especially for managing the open set.\n2. **Heuristic Function:**\
+    \ Modify `h(n)` to improve algorithm efficiency while maintaining admissibility.\n\
+    3. **Path Reconstruction:** Enhance the `reconstruct_path` function for better\
+    \ performance.\n4. **Reducing Overhead:** Identify and minimize unnecessary computations\
+    \ or redundant checks.\n\nAdditionally, provide a comprehensive analysis of the\
+    \ time and space complexity of your optimized algorithm and compare it with the\
+    \ complexity of the standard implementation.\n\nYour task is to: Optimize the\
+    \ A* search algorithm in Python based on the provided pseudocode and criteria.\n\
+    Produce **only the requested code** no English -- **ONLY CODE!!**.\n[/task]\n"

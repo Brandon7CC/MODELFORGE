@@ -16,7 +16,7 @@ import argparse
 from datetime import datetime
 from pipeline.tasks import Tasks
 from renderers import custom_markdown
-from ai import ModelForge
+from modelforge import ModelForge
 
 MAX_FAIL_LIMIT = 10
 
@@ -64,9 +64,14 @@ def execute_task_iteration(task, iteration):
                 "!!!! 🚨 WARNING -- Reached maximum invalid responses. Moving to the next task. !!!!"
             )
             break
-        print(
-            f"❌ Not validated. Trying again... Here's what was completed\n---\n{task.negative_results[-1]}\n---\n"
-        )
+        if len(task.negative_results) > 0:
+            print(
+                f"❌ Not validated. Trying again... Here's what was completed\n---\n{task.negative_results[-1]}\n---\n"
+            )
+        else:
+            print(
+                f"❌ Not validated. Trying again... \n⚠️ WARNING: The LLM didn't return a valid reponse... try a different model or system prompt...---\n"
+            )
 
 
 def route_tasks(tasks, results_file_path=None):

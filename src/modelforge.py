@@ -24,30 +24,10 @@ import shutil
 from installers.wrapper import install_ollama, install_gcloud
 from google.oauth2 import service_account
 import json
-
-
-def get_gcloud_project_id():
-    # Get the client secrets JSON file path from the environment variable
-    client_secrets_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-    # Read the JSON file if it exists
-    if client_secrets_path:
-        with open(client_secrets_path, "r") as f:
-            client_secrets = f.read()
-            # Get the gcloud project ID from the JSON file `project_id` key
-            project_id = json.loads(client_secrets)["project_id"]
-            return project_id
-    else:
-        print(
-            "Error: GOOGLE_APPLICATION_CREDENTIALS environment variable not set."
-        )
+from abc import ABC, abstractmethod
 
 
 class ModelForge:
-
-    @staticmethod
-    def isModelProprietary(model: str):
-        return any(name in model
-                   for name in ["bison", "unicorn", "gemini", "gpt"])
 
     @staticmethod
     def isGoogleModel(model_name):
@@ -55,12 +35,16 @@ class ModelForge:
         # If the model is an instance of TextGenerationModel, then it's a Google model
         return isinstance(model_name, TextGenerationModel) or any(
             keyword in model_name
-            for keyword in ["bison", "unicorn", "gemini"])
+            for keyword in ["gecko", "otter", "bison", "unicorn", "gemini"])
 
     @staticmethod
     def isOpenAI(model):
         # If the model is an instance of TextGenerationModel, then it's a Google model
         return "gpt" in model
+
+    @staticmethod
+    def isModelProprietary(model: str):
+        return ModelForge.isGoogleModel(model) or ModelForge.isOpenAI(model)
 
     @staticmethod
     def destroy():
@@ -209,141 +193,58 @@ class ModelForge:
         # print(f"🗑️  MODELFORGE: {self.name} based on: {self.base_model} deleted successfully.")
 
 
+# Base class for all models
+class BaseModel(ABC):
+
+    def __init__(self, modelForge):
+        self.modelForge = modelForge
+        self.base_model = modelForge.base_model
+
+    @abstractmethod
+    def query(self, prompt):
+        pass
+
+
+class OllamaModel(BaseModel):
+
+    def __init__(self, modelForge):
+        super().__init__(modelForge)
+        self.llm = Ollama(model=modelForge.name)
+
+    def query(self, prompt):
+        return self.llm(prompt)
+
+
 class LLM:
 
     def __init__(self, modelForge: ModelForge):
         self.modelForge = modelForge
-        self.base_model = modelForge.base_model
-        model = modelForge.name
-        self.isPropriatary = ModelForge.isModelProprietary(model)
-        self.retry_limit = 3
         self.logger = logging.getLogger(__name__)
+        self.retry_limit = 3
+        self.model = self._initialize_model(modelForge)
 
-        # Set the model
-        if not self.isPropriatary:
-            self.llm = Ollama(model=model)
-        elif ModelForge.isGoogleModel(self.base_model):
-            # Check if the `GOOGLE_APPLICATION_CREDENTIALS` environment variable is set
-            if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is None:
-                key_path = input(
-                    "Please enter the path to your GCP Project's service account\n"
-                    "credential's JSON file. This can be found by:\n"
-                    "1. GPC Console"
-                    "2. Go to APIs & Services > Credentials > Create Credentials > Service Account\n"
-                    "\nPATH: ")
-                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
-            key_path = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
-            region = "us-west1" if "gemini" in self.base_model else "us-central1"
-            credentials = service_account.Credentials.from_service_account_file(
-                key_path,
-                scopes=['https://www.googleapis.com/auth/cloud-platform'])
-            vertexai.init(project=get_gcloud_project_id(),
-                          location=region,
-                          credentials=credentials)
-            if "gemini" in self.base_model:
-                self.model = GenerativeModel("gemini-pro")
-            else:  # PaLM 2 models: Gekco, Bison, Unicorn
-                self.parameters = {
-                    "candidate_count": 1,
-                    "max_output_tokens": 1024,
-                    "temperature": self.modelForge.temperature,
-                    "top_k": 22,
-                }
-                if "code" in self.base_model:
-                    self.model = CodeGenerationModel.from_pretrained(
-                        self.base_model)
-                    # Remove the `top_k` key from the parameters
-                    self.parameters.pop("top_k")
-                else:
-                    self.model = TextGenerationModel.from_pretrained(
-                        self.base_model)
-        elif ModelForge.isOpenAI(self.base_model):
-            if not os.environ.get("OPENAI_API_KEY"):
-                api_key = input("Please enter your OpenAI API key: ")
-                os.environ["OPENAI_API_KEY"] = api_key
-            api_key = os.environ["OPENAI_API_KEY"]
-            self.model = OpenAI()
+    def _initialize_model(self, modelForge):
+        if ModelForge.isModelProprietary(modelForge.name):
+            if ModelForge.isGoogleModel(modelForge.base_model):
+                return GoogleModel(modelForge)
+            elif ModelForge.isOpenAI(modelForge.base_model):
+                return OpenAIModel(modelForge)
+        else:
+            return OllamaModel(modelForge)
 
     def query_llm(self, prompt: str) -> str:
         if not prompt:
             return "Invalid prompt"
         print(
-            f"\n🎆 **Querying the `{self.base_model}` model... please hold...**"
+            f"\n🎆 **Querying the `{self.modelForge.base_model}` model... please hold...**"
         )
 
-        retries = 0
-        while retries < self.retry_limit:
-            if not self.isPropriatary:
-                try:
-                    return self.llm(prompt)
-                except Exception as e:
-                    self.logger.error(f"Error querying LLM: {e}")
-                    retries += 1
-            elif ModelForge.isGoogleModel(self.base_model):
-                google_model_prompt = f"""
-                        [SYSTEM]
-                        {self.modelForge.system_prompt}
-                        [/SYSTEM]
-                        [PROMPT]
-                        {prompt}
-                        [/PROMPT]
-                        """
-                if "gemini" in self.base_model:
-                    try:
-                        chat = self.model.start_chat()
+        for _ in range(self.retry_limit):
+            try:
+                return self.model.query(prompt)
+            except Exception as e:
+                self.logger.error(f"Error querying LLM: {e}")
 
-                        def get_chat_response(chat: ChatSession,
-                                              prompt: str) -> str:
-                            response = chat.send_message(prompt)
-                            return response.text
-
-                        prompt = google_model_prompt
-                        completion = get_chat_response(chat, prompt)
-                        # print(f"Response from ✨ Gemini: \n{completion}")
-                        retries = 0
-                        return completion
-                    except vertexai.generative_models._generative_models.ResponseBlockedError as e:
-                        retries += 1
-                        if retries >= self.retry_limit:
-                            return "Error querying LLM after retries"
-                    except Exception as e:
-                        # Check if `gcloud` is installed
-                        result = run(["which", "gcloud"], capture_output=True)
-                        if result.returncode != 0:
-                            install_gcloud()
-                else:
-                    retries = 0
-                    while retries < self.retry_limit:
-                        try:
-                            response = self.model.predict(
-                                google_model_prompt,
-                                **self.parameters,
-                            )
-                            # print(f"Response 🌴 PaLM 2's {self.base_model}:\n {response.text}")
-                            retries = 0
-                            return response.text
-                        except vertexai.generative_models._generative_models.ResponseBlockedError as e:
-                            retries += 1
-                            if retries >= self.retry_limit:
-                                return "Error querying LLM after retries"
-            elif ModelForge.isOpenAI(self.base_model):
-                response = self.model.chat.completions.create(
-                    model=self.base_model,
-                    messages=[{
-                        "role": "system",
-                        "content": self.modelForge.system_prompt
-                    }, {
-                        "role": "user",
-                        "content": prompt
-                    }],
-                    temperature=self.modelForge.temperature,
-                    max_tokens=2048,
-                    top_p=0.5,
-                    frequency_penalty=0.01,
-                    presence_penalty=0.01)
-                completion = response.choices[0].message.content
-                # print(f"Response from 🔥 {self.base_model}:\n {completion}")
-                return completion
         return "Error querying LLM after retries"
 
     def batch_query_llm(self, prompts: list) -> list:
@@ -354,7 +255,121 @@ class LLM:
         return [self.query_llm(prompt) for prompt in prompts]
 
 
-if __name__ == "__main__":
-    llm = LLM(model="c-agent-dev-phi")
-    prompt = "A program representing a buffer overflow bug."
-    print(llm.batch_query_llm([prompt] * 1))
+class OpenAIModel(BaseModel):
+
+    def __init__(self, modelForge: ModelForge):
+        super().__init__(modelForge)
+        self._initialize_openai_model(modelForge)
+
+    def _initialize_openai_model(self, modelForge):
+        if not os.environ.get("OPENAI_API_KEY"):
+            api_key = input("Please enter your OpenAI API key: ")
+            os.environ["OPENAI_API_KEY"] = api_key
+
+        self.model = OpenAI()
+
+    def query(self, prompt):
+        response = self.model.chat.completions.create(
+            model=self.base_model,
+            messages=[{
+                "role": "system",
+                "content": self.modelForge.system_prompt
+            }, {
+                "role": "user",
+                "content": prompt
+            }],
+            temperature=self.modelForge.temperature,
+            max_tokens=2048,
+            top_p=0.5,
+            frequency_penalty=0.01,
+            presence_penalty=0.01)
+        completion = response.choices[0].message.content
+        return completion
+
+
+class GoogleModel(BaseModel):
+
+    def __init__(self, modelForge: ModelForge):
+        super().__init__(modelForge)
+        self._initialize_google_model(modelForge)
+
+    def _initialize_google_model(self, modelForge):
+        # Set environment and credentials for Google Cloud
+        self._set_google_credentials()
+        region = "us-west1" if "gemini" in modelForge.base_model else "us-central1"
+        credentials = service_account.Credentials.from_service_account_file(
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"],
+            scopes=['https://www.googleapis.com/auth/cloud-platform'])
+        vertexai.init(project=self._get_gcloud_project_id(),
+                      location=region,
+                      credentials=credentials)
+        # Initialize model
+        if "gemini" in modelForge.base_model:
+            self.model = GenerativeModel("gemini-pro")
+        else:
+            self.parameters = self._get_model_parameters(modelForge)
+            self.model = self._get_google_text_model(modelForge)
+
+    def _set_google_credentials(self):
+        if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+            key_path = input(
+                "Please enter your GCP service account credentials path: ")
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
+
+    def _get_gcloud_project_id(self):
+        # Get the client secrets JSON file path from the environment variable
+        client_secrets_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        # Read the JSON file if it exists
+        if client_secrets_path:
+            with open(client_secrets_path, "r") as f:
+                client_secrets = f.read()
+                # Get the gcloud project ID from the JSON file `project_id` key
+                project_id = json.loads(client_secrets)["project_id"]
+                return project_id
+        else:
+            print(
+                "Error: GOOGLE_APPLICATION_CREDENTIALS environment variable not set."
+            )
+
+    def _get_model_parameters(self, modelForge):
+        parameters = {
+            "candidate_count": 1,
+            "max_output_tokens": 1024,
+            "temperature": modelForge.temperature,
+            "top_k": 22
+        }
+        return parameters
+
+    def _get_google_text_model(self, modelForge):
+        if "code" in modelForge.base_model:
+            return CodeGenerationModel.from_pretrained(modelForge.base_model)
+        else:
+            return TextGenerationModel.from_pretrained(modelForge.base_model)
+
+    def _get_chat_response(self, chat: ChatSession, prompt: str) -> str:
+        response = chat.send_message(prompt)
+        return response.text
+
+    def query(self, prompt):
+        google_model_prompt = f"""
+                [SYSTEM]
+                {self.modelForge.system_prompt}
+                [/SYSTEM]
+                [PROMPT]
+                {prompt}
+                [/PROMPT]
+                """
+        if "gemini" in self.base_model:
+            chat = self.model.start_chat()
+            completion = self._get_chat_response(chat, google_model_prompt)
+            # print(f"Response from ✨ Gemini: \n{completion}")
+            return completion
+        else:
+            response = self.model.predict(
+                google_model_prompt,
+                **self.parameters,
+            )
+            # print(
+            #     f"Response 🌴 PaLM 2's {self.base_model}:\n {response.text}"
+            # )
+            return response.text

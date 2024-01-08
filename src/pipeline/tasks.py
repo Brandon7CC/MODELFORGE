@@ -7,8 +7,7 @@ Organization: Swiftly Detecting
 Description: Creates tasks from the provided configuration file.
 """
 
-from ai import LLM
-from ai import ModelForge
+from modelforge import LLM, ModelForge
 from pipeline.evaluator import Evaluator
 from pipeline.agent import Agent
 from pipeline.postprocessor import Postprocessor
@@ -69,7 +68,7 @@ class Task:
             self.negative_results
         }
 
-    def execute_and_validate(self) -> bool:
+    def execute_and_validate(self):
         # We're now going to want to create a new model off of the base_model specified
         agent_forge = ModelForge(base_model=self.agent.base_model,
                                  temperature=self.agent.temperature,
@@ -77,7 +76,9 @@ class Task:
         agent_forge.create_model()
         # print(f"Created model: {agent_forge.name} based on {agent_forge.base_model}")
         agent_llm = LLM(agent_forge)
-        completion_to_process = agent_llm.query_llm(self.prompt).strip()
+        completion_to_process = agent_llm.query_llm(self.prompt)
+        if completion_to_process is not None:
+            completion_to_process = completion_to_process.strip()
         agent_forge.delete_model()
         # print(f"Deleted {agent_forge.name}")
 
@@ -91,7 +92,9 @@ class Task:
             # print(f"Created model: {postprocessor_forge.name} based on {postprocessor_forge.base_model}")
             postprocessor_llm = LLM(postprocessor_forge)
             completion_for_eval = postprocessor_llm.query_llm(
-                f"{completion_to_process}").strip()
+                f"{completion_to_process}")
+            if completion_for_eval is not None:
+                completion_for_eval = completion_for_eval.strip()
             postprocessor_forge.delete_model()
         else:
             completion_for_eval = completion_to_process
@@ -101,27 +104,22 @@ class Task:
             base_model=self.evaluator.base_model,
             temperature=self.evaluator.temperature,
             system_prompt=self.evaluator.system_prompt)
-        # We'll want to print a warning if the user chose a base_model which is not great at domain knowledge.
-        safe_eval_models = [
-            "mistral", "orca", "vicuna", "wizard", "llama", "mixtral",
-            "gemini", "unicorn", "gpt", "bison"
-        ]
-        if not any(model in evaluator_forge.base_model
-                   for model in safe_eval_models):
-            print(
-                f"⚠️ WARNING: The model {evaluator_forge.base_model} is not great at domain knowledge. Please consider using one of the following models: {safe_eval_models}"
-            )
         evaluator_forge.create_model()
         evaluator_llm = LLM(evaluator_forge)
         evaluator_query = f"Ignoring this line is the following ONLY code?\n{completion_for_eval}"
-        eval_result = evaluator_llm.query_llm(evaluator_query).strip()
+        eval_result = evaluator_llm.query_llm(evaluator_query)
+        if eval_result is not None:
+            eval_result = eval_result.strip()
         evaluator_forge.delete_model()
-        validated: bool = eval_result.split('\n')[0].lower() == "true"
-        if validated:
-            self.positive_results.append(completion_for_eval)
+        if eval_result is not None:
+            validated: bool = eval_result.split('\n')[0].lower() == "true"
+            if validated:
+                self.positive_results.append(completion_for_eval)
+            else:
+                self.negative_results.append(completion_for_eval)
+            return validated
         else:
-            self.negative_results.append(completion_for_eval)
-        return validated
+            print("Error from the evaluator! No result returned...")
 
 
 # A wrapper for a list of tasks to be completed.

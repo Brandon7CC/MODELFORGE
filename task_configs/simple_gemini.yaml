@@ -74,7 +74,7 @@ tasks:
         - The Python code you produce is at the expert level.
         Implement the request for the user and remember your requirements. **ONLY CODE!!**
     postprocessor:
-      base_model: gemini-pro
+      base_model: gpt-3.5-turbo
       temperature: 0.1
       system_prompt: |
         You have one job: return the source code provided in the user's message. 
@@ -82,7 +82,7 @@ tasks:
         It's imperative that you return **ONLY the exact code** provided in the user's message.
     # Evaluators have defined system prompts to only return true / false for their domain.
     evaluator:
-      base_model: gemini-pro
+      base_model: text-unicorn@001
       temperature: 0.1
       system_prompt: |
         Act as a validator. You'll return only TRUE or FALSE. The following is an example of what you may partially see:
