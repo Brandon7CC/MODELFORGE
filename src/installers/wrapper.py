@@ -11,21 +11,6 @@ import os
 from pathlib import Path
 import subprocess
 
-import os
-from pathlib import Path
-import subprocess
-
-
-def is_read_only():
-    # Target directory to check
-    target_directory = "/usr/local/bin"
-
-    # Check if target directory is writable
-    if not os.access(target_directory, os.W_OK):
-        # print(f"Error: '{target_directory}' is not writable.")
-        return True
-    return False
-
 
 def execute_command(command):
     result = subprocess.Popen(command,
@@ -38,10 +23,6 @@ def execute_command(command):
 
 
 def install_ollama():
-    if is_read_only():
-        print("Error: Cannot install Ollama. The file system is read-only.")
-        return False
-
     # Get the directory in which this script is located
     script_dir = Path(__file__).parent.resolve()
     # Construct the path to the setup script
@@ -60,23 +41,6 @@ def install_ollama():
 
 
 def install_gcloud():
-    if is_read_only():
-        # Install using nix
-        command = ["nix-env", "-iA", "nixpkgs.google-cloud-sdk"]
-        if not execute_command(command):
-            return False
-
-        # Initilize gcloud
-        # gcloud init
-        # gcloud auth application-default login
-        print("INIT!!!!!!")
-        command = ["gcloud", "init"]
-        if not execute_command(command):
-            return False
-        command = ["gcloud", "auth", "application-default", "login"]
-        if not execute_command(command):
-            return False
-
     setup_filepath = "src/installers/gcloud_setup.sh"
     os.chmod(setup_filepath, 0o755)
     os.system(f"./{setup_filepath}")
@@ -93,5 +57,5 @@ def install_gcloud():
 
 
 if __name__ == "__main__":
-    # install_ollama()
+    install_ollama()
     install_gcloud()

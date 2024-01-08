@@ -9,35 +9,37 @@ Description: This script provides abstractions for interacting with language mod
 - Querying models: OpenAI, Google, and Ollama
 """
 
-import subprocess
 from langchain.llms import Ollama
 import logging
 from subprocess import run
 from pathlib import Path
-import uuid
 import os
 import datetime
 import sys
 import vertexai
-from vertexai.language_models import TextGenerationModel
+from vertexai.language_models import TextGenerationModel, CodeGenerationModel
 from vertexai.preview.generative_models import GenerativeModel, ChatSession
 from openai import OpenAI
-import os
 import shutil
 from installers.wrapper import install_ollama, install_gcloud
+from google.oauth2 import service_account
+import json
 
 
-def get_gcloud_project_id() -> str:
-    result = run(["which", "gcloud"], capture_output=True)
-    if result.returncode != 0:
-        install_gcloud()
-    # `gcloud config get-value project`
-    result = run(["gcloud", "config", "get-value", "project"],
-                 capture_output=True)
-    if result.returncode != 0:
-        print("Error getting project ID attempting reinstall")
-        install_gcloud()
-    return result.stdout.decode("utf-8").strip()
+def get_gcloud_project_id():
+    # Get the client secrets JSON file path from the environment variable
+    client_secrets_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    # Read the JSON file if it exists
+    if client_secrets_path:
+        with open(client_secrets_path, "r") as f:
+            client_secrets = f.read()
+            # Get the gcloud project ID from the JSON file `project_id` key
+            project_id = json.loads(client_secrets)["project_id"]
+            return project_id
+    else:
+        print(
+            "Error: GOOGLE_APPLICATION_CREDENTIALS environment variable not set."
+        )
 
 
 class ModelForge:
@@ -203,12 +205,8 @@ class ModelForge:
         try:
             self.modelfile_path.unlink()
         except FileNotFoundError:
-            pass
+            print("Error deleting model file.")
         # print(f"🗑️  MODELFORGE: {self.name} based on: {self.base_model} deleted successfully.")
-
-    def _query_model(self, prompt: str) -> str:
-        model = LLM(self.name)
-        print(model.query_llm(prompt))
 
 
 class LLM:
@@ -218,15 +216,30 @@ class LLM:
         self.base_model = modelForge.base_model
         model = modelForge.name
         self.isPropriatary = ModelForge.isModelProprietary(model)
+        self.retry_limit = 3
+        self.logger = logging.getLogger(__name__)
+
+        # Set the model
         if not self.isPropriatary:
             self.llm = Ollama(model=model)
         elif ModelForge.isGoogleModel(self.base_model):
-            # Check if `gcloud` is installed
-            result = run(["which", "gcloud"], capture_output=True)
-            if result.returncode != 0:
-                install_gcloud()
-            region = "us-central1" if "unicorn" in self.base_model else "us-west1"
-            vertexai.init(project=get_gcloud_project_id(), location=region)
+            # Check if the `GOOGLE_APPLICATION_CREDENTIALS` environment variable is set
+            if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is None:
+                key_path = input(
+                    "Please enter the path to your GCP Project's service account\n"
+                    "credential's JSON file. This can be found by:\n"
+                    "1. GPC Console"
+                    "2. Go to APIs & Services > Credentials > Create Credentials > Service Account\n"
+                    "\nPATH: ")
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
+            key_path = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+            region = "us-west1" if "gemini" in self.base_model else "us-central1"
+            credentials = service_account.Credentials.from_service_account_file(
+                key_path,
+                scopes=['https://www.googleapis.com/auth/cloud-platform'])
+            vertexai.init(project=get_gcloud_project_id(),
+                          location=region,
+                          credentials=credentials)
             if "gemini" in self.base_model:
                 self.model = GenerativeModel("gemini-pro")
             else:  # PaLM 2 models: Gekco, Bison, Unicorn
@@ -236,37 +249,34 @@ class LLM:
                     "temperature": self.modelForge.temperature,
                     "top_k": 22,
                 }
-                self.model = TextGenerationModel.from_pretrained(
-                    self.base_model)
+                if "code" in self.base_model:
+                    self.model = CodeGenerationModel.from_pretrained(
+                        self.base_model)
+                    # Remove the `top_k` key from the parameters
+                    self.parameters.pop("top_k")
+                else:
+                    self.model = TextGenerationModel.from_pretrained(
+                        self.base_model)
         elif ModelForge.isOpenAI(self.base_model):
-            api_key_path = "credentials/openai.key"
-            if not os.path.exists(api_key_path):
-                api_key_path = "../credentials/openai.key"
-            if not os.path.exists(api_key_path):
+            if not os.environ.get("OPENAI_API_KEY"):
                 api_key = input("Please enter your OpenAI API key: ")
                 os.environ["OPENAI_API_KEY"] = api_key
-                os.makedirs(os.path.dirname(api_key_path), exist_ok=True)
-                with open(api_key_path, "w") as file:
-                    file.write(api_key)
-            else:
-                with open(api_key_path, "r") as file:
-                    self.api_key = file.read()
-                os.environ["OPENAI_API_KEY"] = self.api_key
+            api_key = os.environ["OPENAI_API_KEY"]
             self.model = OpenAI()
-        self.retry_limit = 3
-        self.logger = logging.getLogger(__name__)
-        # self.base_model = model
 
     def query_llm(self, prompt: str) -> str:
         if not prompt:
             return "Invalid prompt"
+        print(
+            f"\n🎆 **Querying the `{self.base_model}` model... please hold...**"
+        )
 
         retries = 0
         while retries < self.retry_limit:
             if not self.isPropriatary:
                 try:
                     return self.llm(prompt)
-                except Exception as e:  # Replace with the specific exception you expect
+                except Exception as e:
                     self.logger.error(f"Error querying LLM: {e}")
                     retries += 1
             elif ModelForge.isGoogleModel(self.base_model):
@@ -292,7 +302,7 @@ class LLM:
                         # print(f"Response from ✨ Gemini: \n{completion}")
                         retries = 0
                         return completion
-                    except vertexai.generative_models._generative_models.ResponseBlockedError as e:  # Replace with the specific exception you expect
+                    except vertexai.generative_models._generative_models.ResponseBlockedError as e:
                         retries += 1
                         if retries >= self.retry_limit:
                             return "Error querying LLM after retries"
@@ -312,7 +322,7 @@ class LLM:
                             # print(f"Response 🌴 PaLM 2's {self.base_model}:\n {response.text}")
                             retries = 0
                             return response.text
-                        except vertexai.generative_models._generative_models.ResponseBlockedError as e:  # Replace with the specific exception you expect
+                        except vertexai.generative_models._generative_models.ResponseBlockedError as e:
                             retries += 1
                             if retries >= self.retry_limit:
                                 return "Error querying LLM after retries"
@@ -334,7 +344,6 @@ class LLM:
                 completion = response.choices[0].message.content
                 # print(f"Response from 🔥 {self.base_model}:\n {completion}")
                 return completion
-
         return "Error querying LLM after retries"
 
     def batch_query_llm(self, prompts: list) -> list:

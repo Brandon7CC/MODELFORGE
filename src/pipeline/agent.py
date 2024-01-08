@@ -8,11 +8,14 @@ Description: Models the agents described in the YAML configuration.
              Agents execute tasks.
 """
 
+
 class Agent:
+
     def __init__(self, base_model, temperature, system_prompt):
         self.base_model = base_model
         self.temperature = temperature
         self.system_prompt = system_prompt
+
 
 if __name__ == "__main__":
     agent_config = {
