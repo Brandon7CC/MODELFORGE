@@ -364,7 +364,12 @@ class GoogleModel(BaseModel):
             completion = self._get_chat_response(chat, google_model_prompt)
             # print(f"Response from ✨ Gemini: \n{completion}")
             return completion
-        else:
+        else:  # This would be a PaLM2 model
+            # Pop the `top_k` parameter if we're talking to a 🦬 `code-bison`
+            if "code-bison" in self.base_model:
+                self.parameters.pop(
+                    "top_k"
+                )  # Remove the `top_k` parameter from the parameters
             response = self.model.predict(
                 google_model_prompt,
                 **self.parameters,

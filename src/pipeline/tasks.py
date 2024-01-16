@@ -12,6 +12,7 @@ from pipeline.evaluator import Evaluator
 from pipeline.agent import Agent
 from pipeline.postprocessor import Postprocessor
 import yaml
+import json
 
 
 class Task:
@@ -50,6 +51,12 @@ class Task:
         """
         Returns the dictionary representation of the tasks which have or will be completed
         """
+        # self.positive_results = [
+        #     return_text_as_markdown(result) for result in self.positive_results
+        # ]
+        # self.negative_results = [
+        #     return_text_as_markdown(result) for result in self.negative_results
+        # ]
         return {
             "task_name":
             self.name,
@@ -68,7 +75,7 @@ class Task:
             self.negative_results
         }
 
-    def execute_and_validate(self):
+    def execute_and_validate(self, critique=None, past_solution=None):
         # We're now going to want to create a new model off of the base_model specified
         agent_forge = ModelForge(base_model=self.agent.base_model,
                                  temperature=self.agent.temperature,
@@ -76,7 +83,20 @@ class Task:
         agent_forge.create_model()
         # print(f"Created model: {agent_forge.name} based on {agent_forge.base_model}")
         agent_llm = LLM(agent_forge)
-        completion_to_process = agent_llm.query_llm(self.prompt)
+        template = f"{self.prompt}"
+        if critique is not None:
+            template = f"""You've previously failed this task. Here was your past solution:
+            {"NOT PROVIDED" if past_solution is None else past_solution.strip()}
+            ---
+            Here's some help / background context:
+            {critique}
+            ---
+            Here's the task again. Let's think step by step.
+            {self.prompt}
+            """.strip()
+            # print(f"\n\n{template}\n\n")
+
+        completion_to_process = agent_llm.query_llm(template)
         if completion_to_process is not None:
             completion_to_process = completion_to_process.strip()
         agent_forge.delete_model()
@@ -106,18 +126,50 @@ class Task:
             system_prompt=self.evaluator.system_prompt)
         evaluator_forge.create_model()
         evaluator_llm = LLM(evaluator_forge)
-        evaluator_query = f"Ignoring this line is the following ONLY code?\n{completion_for_eval}"
-        eval_result = evaluator_llm.query_llm(evaluator_query)
+        json_template = """
+        {
+          "eval_result": false,
+          "critique": "Your detailed notes go here"
+        }
+        """.strip()
+
+        prompt_template = f"""Instructions: 
+        - Respond only in JSON.
+        - Use the `eval_result` tag to insert your TRUE/FALSE evaluation.
+        - If your evaluation is FALSE, use the `critique` tag to add notes. 
+        Here's your template:
+        {json_template}
+        --
+        Here's your aswer to evaluate according to your system prompt:
+        {completion_for_eval}
+        """.strip()
+
+        eval_result = evaluator_llm.query_llm(prompt_template)
         if eval_result is not None:
             eval_result = eval_result.strip()
         evaluator_forge.delete_model()
+        # Remove markdown formatting from the JSON string if it exists
+        if "```json" in eval_result:
+            eval_result = eval_result.replace("```json", "")
+            eval_result = eval_result.replace("```", "")
+
         if eval_result is not None:
-            validated: bool = eval_result.split('\n')[0].lower() == "true"
-            if validated:
-                self.positive_results.append(completion_for_eval)
-            else:
-                self.negative_results.append(completion_for_eval)
-            return validated
+            # Serialize the eval_result into a dictionary (if it's valid JSON)
+            # print(eval_result)
+            try:
+                response_data = json.loads(eval_result)
+                validated = response_data.get("eval_result", False)
+
+                # validated: bool = eval_result.split('\n')[0].lower() == "true"
+                if validated:
+                    self.positive_results.append(completion_for_eval)
+                else:
+                    self.negative_results.append(completion_for_eval)
+                return response_data
+
+            except json.JSONDecodeError:
+                return {"eval_result": False}
+
         else:
             print("Error from the evaluator! No result returned...")
 
