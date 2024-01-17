@@ -1,17 +1,31 @@
-## MODEL FORGE
-> Evaluate hosted [OpenAI GPT](https://platform.openai.com/docs/models) / Google Vertex AI [PaLM2](https://ai.google.dev/models/palm)/[Gemini](https://ai.google.dev/models/gemini) or local [Ollama](https://github.com/jmorganca/ollama) models against a task
+# MODEL FORGE
+> Evaluate hosted [OpenAI GPT](https://platform.openai.com/docs/models) / Google Vertex AI [PaLM2](https://ai.google.dev/models/palm)/[Gemini](https://ai.google.dev/models/gemini) or local [Ollama](https://github.com/jmorganca/ollama) models against a task.
 
 Distribute arbitrary tasks to local or hosted language models. In MODEL FORGE tasks are broken down by: **agents**, (optional) **postprocessor**, and **evaluators**. Tasks have a top level prompt -- the actual work to do. For example: "Implement a simple example of [`malloc`](https://man.freebsd.org/cgi/man.cgi?query=malloc&sektion=9) in C with the following signature: `void* malloc(size_t size)`".
 
-Agents do the actual heavy lifiting of the task's implemtation and you can define your own system prompt. For example, you may want to assess how well models from Google vs. OpenAI, vs. OSS compare. Currently we support:
-* OpenAI GPT models
-* Google PALM2 / Gemini models via Vertex AI
+### Insperation
+This work was inspired by Google DeepMind's [FunSearch](https://deepmind.google/discover/blog/funsearch-making-new-discoveries-in-mathematical-sciences-using-large-language-models/) approach to finding a novel solution to the [cap set](https://en.wikipedia.org/wiki/Cap_set) problem. At the macro level this was done by developing [CoT (Chain of Thought)](https://blog.research.google/2022/05/language-models-perform-reasoning-via.html) based examples, repeatedly prompting PaLM2 to generate a large amounts of programs, and then evaluating those programs on several levels. 
+
+## Supported Providers
+* OpenAI models
+* Google Vertex AI PALM2 / Gemini models
 * OSS models via Ollama e.g. LLaMA, Orca2, Vicuna, Mixtral8x7b, Mistral, Phi2, etc
 
+## Task
+Tasks are defined 
 
+### Agents
+Agents do the actual heavy lifiting of the task's implemtation. This is done by defining a system prompt. For example, you may want to assess how well models from Google vs. OpenAI, vs. OSS compare. 
+
+### Postprocessors
 Postprocessors are optional and take the answer returned by the the agent and manipulate it in some way according to a system prompt. An example of a good postprocessor might be to extract the code from a message or turn it into JSON form.
 
-Evaluators are 
+### Evaluators
+Evaluators are another crutial part of the MODEL FORGE task chain. Evaluators, like agents and postprocessors have a defined system prompt that allow them to perform an evaluation on the answer returned by the postprocessor (if one was defined) or the agent (otherwise). As an example: 
+
+> "Act as an expert C software engineer working on kernel components. You're skilled in secure development and follow best practices. Has the user correctly 
+
+It's important to understand here that evaluators must be instructed in their system prompt to return a boolean `TRUE` or `FALSE` as their first word. They're instructed to perform
 
 ## Use cases
 * Evaluate model(s) against a common task

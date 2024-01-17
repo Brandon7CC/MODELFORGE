@@ -140,7 +140,7 @@ class Task:
         Here's your template:
         {json_template}
         --
-        Here's your aswer to evaluate according to your system prompt:
+        Here's the answer to evaluate according to your system prompt:
         {completion_for_eval}
         """.strip()
 
