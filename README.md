@@ -1,17 +1,25 @@
 ## MODEL FORGE
-> Evaluate hosted OpenAI GPT / Google PaLM2/Gemini or local Ollama models against a task
+> Evaluate hosted [OpenAI GPT](https://platform.openai.com/docs/models) / Google Vertex AI [PaLM2](https://ai.google.dev/models/palm)/[Gemini](https://ai.google.dev/models/gemini) or local [Ollama](https://github.com/jmorganca/ollama) models against a task
 
-Distribute arbitrary tasks to local or hosted language models. In MODEL FORGE tasks are broken down by: **agents**, (optional) **postprocessor**, and **evaluators**. Tasks have a top level prompt -- the actual work to do. For example: "Implement a simple example of mmcpy in C."
+Distribute arbitrary tasks to local or hosted language models. In MODEL FORGE tasks are broken down by: **agents**, (optional) **postprocessor**, and **evaluators**. Tasks have a top level prompt -- the actual work to do. For example: "Implement a simple example of [`malloc`](https://man.freebsd.org/cgi/man.cgi?query=malloc&sektion=9) in C with the following signature: `void* malloc(size_t size)`".
 
-Agents do the actual heavy lifiting of the task's implemtation and you can define your own system prompt. 
-
-For example, you may want to assess how well models from Google vs. OpenAI, vs. OSS compare. Currently we support:
+Agents do the actual heavy lifiting of the task's implemtation and you can define your own system prompt. For example, you may want to assess how well models from Google vs. OpenAI, vs. OSS compare. Currently we support:
 * OpenAI GPT models
 * Google PALM2 / Gemini models via Vertex AI
 * OSS models via Ollama e.g. LLaMA, Orca2, Vicuna, Mixtral8x7b, Mistral, Phi2, etc
 
-## Example task
-Say you want to to simply implement scaled attention in Python and you're curious how the same task will perform against any or all of the above models. You could define a task like the following:
+
+Postprocessors are optional and take the answer returned by the the agent and manipulate it in some way according to a system prompt. An example of a good postprocessor might be to extract the code from a message or turn it into JSON form.
+
+Evaluators are 
+
+## Use cases
+* Evaluate model(s) against a common task
+* Produce examples of creative ways to solve a problem
+  * Chain models together to enable a simple thought loop
+
+## Example
+want to to simply implement scaled attention in Python and you're curious how the same task will perform against any or all of the above models. You could define a task like the following:
 ```yaml
 tasks:
   - name: SCALED-ATTENTION
