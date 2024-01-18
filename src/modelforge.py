@@ -28,14 +28,14 @@ from abc import ABC, abstractmethod
 
 
 class ModelForge:
-
     @staticmethod
     def isGoogleModel(model_name):
         model_name = str(model_name)
         # If the model is an instance of TextGenerationModel, then it's a Google model
         return isinstance(model_name, TextGenerationModel) or any(
             keyword in model_name
-            for keyword in ["gecko", "otter", "bison", "unicorn", "gemini"])
+            for keyword in ["gecko", "otter", "bison", "unicorn", "gemini"]
+        )
 
     @staticmethod
     def isOpenAI(model):
@@ -61,8 +61,7 @@ class ModelForge:
         models = result.stdout.decode("utf-8").split("\n")
         # Filter out the ones we created
         models = [
-            model.split("\t") for model in models
-            if model.startswith("MODELFORGE-")
+            model.split("\t") for model in models if model.startswith("MODELFORGE-")
         ]
         # Delete the models
         for model in models:
@@ -71,9 +70,7 @@ class ModelForge:
             if output.returncode != 0:
                 print(f"Error deleting model: {model}")
 
-        print(
-            f"✅ MODELFORGE: deleted the {len(models)} models created by this run."
-        )
+        print(f"✅ MODELFORGE: deleted the {len(models)} models created by this run.")
 
     @staticmethod
     def model_exists(model: str):
@@ -91,7 +88,8 @@ class ModelForge:
         temperature: float,
         system_prompt: str,
         directory: Path = Path("/tmp/")
-        if sys.platform.startswith("linux") else Path("/private/tmp/models"),
+        if sys.platform.startswith("linux")
+        else Path("/private/tmp/models"),
     ):
         """
         Custom models have the following:
@@ -120,17 +118,16 @@ class ModelForge:
                 exit(1)
 
             # Ollama model file creation
-            self.modelfile_path = directory.joinpath(
-                f"{self.name}-Modelfile.txt")
+            self.modelfile_path = directory.joinpath(f"{self.name}-Modelfile.txt")
 
             # Check to ensure that the base model exists. Exit gracefully if not.
             result = run(["ollama", "list"], capture_output=True)
             # Check that the model name is in the output
             if result.returncode != 0 or self.base_model not in result.stdout.decode(
-                    "utf-8"):
+                "utf-8"
+            ):
                 # Run `ollama pull <base_model>` to pull the model
-                result = run(["ollama", "pull", self.base_model],
-                             capture_output=True)
+                result = run(["ollama", "pull", self.base_model], capture_output=True)
                 if result.returncode != 0:
                     print(f"Error pulling model: {self.base_model}")
 
@@ -158,10 +155,7 @@ class ModelForge:
         if self.proprietary:
             return
 
-        command = [
-            "ollama", "create", self.name, "-f",
-            str(self.modelfile_path)
-        ]
+        command = ["ollama", "create", self.name, "-f", str(self.modelfile_path)]
 
         # Create the model
         result = run(command, capture_output=True)
@@ -195,7 +189,6 @@ class ModelForge:
 
 # Base class for all models
 class BaseModel(ABC):
-
     def __init__(self, modelForge):
         self.modelForge = modelForge
         self.base_model = modelForge.base_model
@@ -206,7 +199,6 @@ class BaseModel(ABC):
 
 
 class OllamaModel(BaseModel):
-
     def __init__(self, modelForge):
         super().__init__(modelForge)
         self.llm = Ollama(model=modelForge.name)
@@ -216,7 +208,6 @@ class OllamaModel(BaseModel):
 
 
 class LLM:
-
     def __init__(self, modelForge: ModelForge):
         self.modelForge = modelForge
         self.logger = logging.getLogger(__name__)
@@ -249,14 +240,14 @@ class LLM:
 
     def batch_query_llm(self, prompts: list) -> list:
         if not isinstance(prompts, list) or not all(
-                isinstance(p, str) for p in prompts):
+            isinstance(p, str) for p in prompts
+        ):
             return ["Invalid batch prompts"]
 
         return [self.query_llm(prompt) for prompt in prompts]
 
 
 class OpenAIModel(BaseModel):
-
     def __init__(self, modelForge: ModelForge):
         super().__init__(modelForge)
         self._initialize_openai_model(modelForge)
@@ -271,24 +262,21 @@ class OpenAIModel(BaseModel):
     def query(self, prompt):
         response = self.model.chat.completions.create(
             model=self.base_model,
-            messages=[{
-                "role": "system",
-                "content": self.modelForge.system_prompt
-            }, {
-                "role": "user",
-                "content": prompt
-            }],
+            messages=[
+                {"role": "system", "content": self.modelForge.system_prompt},
+                {"role": "user", "content": prompt},
+            ],
             temperature=self.modelForge.temperature,
             max_tokens=2048,
             top_p=0.5,
             frequency_penalty=0.01,
-            presence_penalty=0.01)
+            presence_penalty=0.01,
+        )
         completion = response.choices[0].message.content
         return completion
 
 
 class GoogleModel(BaseModel):
-
     def __init__(self, modelForge: ModelForge):
         super().__init__(modelForge)
         self._initialize_google_model(modelForge)
@@ -299,10 +287,13 @@ class GoogleModel(BaseModel):
         region = "us-west1" if "gemini" in modelForge.base_model else "us-central1"
         credentials = service_account.Credentials.from_service_account_file(
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"],
-            scopes=['https://www.googleapis.com/auth/cloud-platform'])
-        vertexai.init(project=self._get_gcloud_project_id(),
-                      location=region,
-                      credentials=credentials)
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        )
+        vertexai.init(
+            project=self._get_gcloud_project_id(),
+            location=region,
+            credentials=credentials,
+        )
         # Initialize model
         if "gemini" in modelForge.base_model:
             self.model = GenerativeModel("gemini-pro")
@@ -313,7 +304,8 @@ class GoogleModel(BaseModel):
     def _set_google_credentials(self):
         if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
             key_path = input(
-                "Please enter your GCP service account credentials path: ")
+                "Please enter your GCP service account credentials (JSON) path: "
+            )
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
 
     def _get_gcloud_project_id(self):
@@ -327,16 +319,14 @@ class GoogleModel(BaseModel):
                 project_id = json.loads(client_secrets)["project_id"]
                 return project_id
         else:
-            print(
-                "Error: GOOGLE_APPLICATION_CREDENTIALS environment variable not set."
-            )
+            print("Error: GOOGLE_APPLICATION_CREDENTIALS environment variable not set.")
 
     def _get_model_parameters(self, modelForge):
         parameters = {
             "candidate_count": 1,
             "max_output_tokens": 1024,
             "temperature": modelForge.temperature,
-            "top_k": 22
+            "top_k": 22,
         }
         return parameters
 
