@@ -16,9 +16,15 @@ import json
 
 
 class Task:
-
-    def __init__(self, name, run_count, prompt, agent_config,
-                 postprocessor_config, evaluator_config):
+    def __init__(
+        self,
+        name,
+        run_count,
+        prompt,
+        agent_config,
+        postprocessor_config,
+        evaluator_config,
+    ):
         """
         Tasks will have a:
         - name
@@ -58,28 +64,24 @@ class Task:
         #     return_text_as_markdown(result) for result in self.negative_results
         # ]
         return {
-            "task_name":
-            self.name,
-            "task_prompt":
-            f"{self.prompt}",
-            "agent_config":
-            f"{self.agent.base_model} w/{self.agent.temperature} * {self.run_count}",
-            "post_processor_config":
-            f"{self.postprocessor.base_model} w/{self.postprocessor.temperature}"
-            if self.postprocessor else "NONE",
-            "evaluator_config":
-            f"{self.evaluator.base_model} w/{self.evaluator.temperature}",
-            "positive_results":
-            self.positive_results,
-            "negative_results":
-            self.negative_results
+            "task_name": self.name,
+            "task_prompt": f"{self.prompt}",
+            "agent_config": f"{self.agent.base_model} w/{self.agent.temperature} * {self.run_count}",
+            "post_processor_config": f"{self.postprocessor.base_model} w/{self.postprocessor.temperature}"
+            if self.postprocessor
+            else "NONE",
+            "evaluator_config": f"{self.evaluator.base_model} w/{self.evaluator.temperature}",
+            "positive_results": self.positive_results,
+            "negative_results": self.negative_results,
         }
 
     def execute_and_validate(self, critique=None, past_solution=None):
         # We're now going to want to create a new model off of the base_model specified
-        agent_forge = ModelForge(base_model=self.agent.base_model,
-                                 temperature=self.agent.temperature,
-                                 system_prompt=self.agent.system_prompt)
+        agent_forge = ModelForge(
+            base_model=self.agent.base_model,
+            temperature=self.agent.temperature,
+            system_prompt=self.agent.system_prompt,
+        )
         agent_forge.create_model()
         # print(f"Created model: {agent_forge.name} based on {agent_forge.base_model}")
         agent_llm = LLM(agent_forge)
@@ -107,12 +109,14 @@ class Task:
             postprocessor_forge = ModelForge(
                 base_model=self.postprocessor.base_model,
                 temperature=self.postprocessor.temperature,
-                system_prompt=self.postprocessor.system_prompt)
+                system_prompt=self.postprocessor.system_prompt,
+            )
             postprocessor_forge.create_model()
             # print(f"Created model: {postprocessor_forge.name} based on {postprocessor_forge.base_model}")
             postprocessor_llm = LLM(postprocessor_forge)
             completion_for_eval = postprocessor_llm.query_llm(
-                f"{completion_to_process}")
+                f"{completion_to_process}"
+            )
             if completion_for_eval is not None:
                 completion_for_eval = completion_for_eval.strip()
             postprocessor_forge.delete_model()
@@ -123,7 +127,8 @@ class Task:
         evaluator_forge = ModelForge(
             base_model=self.evaluator.base_model,
             temperature=self.evaluator.temperature,
-            system_prompt=self.evaluator.system_prompt)
+            system_prompt=self.evaluator.system_prompt,
+        )
         evaluator_forge.create_model()
         evaluator_llm = LLM(evaluator_forge)
         json_template = """
@@ -177,7 +182,6 @@ class Task:
 # A wrapper for a list of tasks to be completed.
 # `Tasks` has a property `tasks` which is the list of tasks tracked for execution
 class Tasks:
-
     def __init__(self, config_path):
         # Maintain a list of tasks to complete
         self.tasks = []
@@ -190,15 +194,18 @@ class Tasks:
         """
 
         # Open the YAML config file
-        with open(config_path, 'r') as file:
+        with open(config_path, "r") as file:
             # Load the YAML into a dict
             config = yaml.safe_load(file)
             # Process each task in the config by making Task objects
-            for task_config in config.get('tasks', []):
+            for task_config in config.get("tasks", []):
                 self.tasks.append(
-                    Task(name=task_config['name'],
-                         run_count=task_config['run_count'],
-                         prompt=task_config['prompt'],
-                         agent_config=task_config['agent'],
-                         postprocessor_config=task_config.get('postprocessor'),
-                         evaluator_config=task_config['evaluator']))
+                    Task(
+                        name=task_config["name"],
+                        run_count=task_config["run_count"],
+                        prompt=task_config["prompt"],
+                        agent_config=task_config["agent"],
+                        postprocessor_config=task_config.get("postprocessor"),
+                        evaluator_config=task_config["evaluator"],
+                    )
+                )

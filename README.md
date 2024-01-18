@@ -1,5 +1,5 @@
 # 🔨 MODEL FORGE
-> Evaluate hosted [OpenAI GPT](https://platform.openai.com/docs/models) / Google Vertex AI [PaLM2](https://ai.google.dev/models/palm)/[Gemini](https://ai.google.dev/models/gemini) or local [Ollama](https://github.com/jmorganca/ollama) models against a task.
+> Evaluate hosted [OpenAI GPT](https://platform.openai.com/docs/models) / Google Vertex AI [PaLM2](https://ai.google.dev/models/palm)/[Gemini](https://ai.google.dev/models/gemini) or local [Ollama models](https://ollama.ai/library) against a task.
 
 Distribute arbitrary tasks as YAML to local or hosted language models. In MODEL FORGE tasks are broken down by: **agents**, optional **postprocessor**, and **evaluators**. Tasks have a top level prompt -- the actual work to do. For example, you could use the following as a task prompt: "Implement a simple example of [`malloc`](https://man.freebsd.org/cgi/man.cgi?query=malloc&sektion=9) in C with the following signature: `void* malloc(size_t size)`". Next, you could include a postprocessor request to a local model to extract only the program's source code from the agent's response. Finally, your evaluator would be instructed to act as an expert in the task ideally with [CoT (Chain of Thought)](https://blog.research.google/2022/05/language-models-perform-reasoning-via.html) based examples examples included.
 
@@ -28,15 +28,15 @@ python src/main.py -h
 ```
 
 ## Supported Providers
-* OpenAI text completion models. For example,
+* [OpenAI](https://platform.openai.com/docs/models) text completion models. For example,
   * gpt-3.5-turbo
   * gpt-4
   * gpt-4-1106-preview
-* Google Vertex AI PALM2 / Gemini text/code completion models. For example,
+* Google Vertex AI [PALM2](https://ai.google.dev/models/palm) / [Gemini](https://ai.google.dev/models/gemini) text/code completion models. For example,
   * gemini-pro
-  * tex-unicorn@001
+  * text-unicorn@001
   * code-bison
-* OSS models via Ollama e.g. LLaMA, Orca2, Vicuna, Mixtral8x7b, Mistral, Phi2, etc
+* OSS [models via Ollama](https://ollama.ai/library) e.g. LLaMA, Orca2, Vicuna, Mixtral8x7b, Mistral, Phi2, etc
 
 ## Task
 Tasks are defined in YAML form and can be broken down into three promary components: 

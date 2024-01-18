@@ -21,8 +21,9 @@ def render_and_write_code_list_as_markdown(objects, save=False):
     console.print(Markdown(markdown_text))
 
     if save:
-        with open(f'results_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.md',
-                  'w') as f:
+        with open(
+            f'results_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.md', "w"
+        ) as f:
             f.write(markdown_text)
 
 

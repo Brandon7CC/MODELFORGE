@@ -11,7 +11,6 @@ Description: Models the evaluators described in the YAML configuration.
 
 
 class Evaluator:
-
     def __init__(self, base_model, temperature, system_prompt):
         self.base_model = base_model
         self.temperature = temperature
@@ -20,9 +19,9 @@ class Evaluator:
 
 if __name__ == "__main__":
     evaluator_config = {
-        'model': 'phi',
-        'temperature': 0.1,
-        'system_prompt': 'language: c'
+        "model": "phi",
+        "temperature": 0.1,
+        "system_prompt": "language: c",
     }
     evaluator = Evaluator(**evaluator_config)
     print(evaluator.base_model)

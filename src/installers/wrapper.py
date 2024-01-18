@@ -13,9 +13,7 @@ import subprocess
 
 
 def execute_command(command):
-    result = subprocess.Popen(command,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
+    result = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = result.communicate()
     if result.returncode != 0:
         return False
