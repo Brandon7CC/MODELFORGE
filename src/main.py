@@ -122,7 +122,7 @@ def main():
         "--output",
         type=str,
         default=
-        f"research_results_{datetime.now().strftime('%Y%m%d-%H%M%S')}.yaml",
+        f"./research_results_{datetime.now().strftime('%Y%m%d-%H%M%S')}.yaml",
         help="File name to save the results to")
 
     parser.add_argument(

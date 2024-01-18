@@ -1,0 +1,43 @@
+tasks:
+  - name: FizzBuzz
+    # If a run count is not provided then the task will only run until evaluator success.
+    run_count: 5
+    prompt: |
+        Write a program to display numbers from 1 to n. For multiples of three, print "Fizz" 
+        instead of the number, and for the multiples of five, print "Buzz". For numbers which 
+        are multiples of both three and five, print "FizzBuzz".
+        Let's think step by step.
+    agent: 
+      # We'll generate a custom model for each base model
+      base_model: codellama
+      temperature: 0.98
+      system_prompt: | 
+        You're an expert Python developer. Follow these requirement **exactly**:
+        - The code you produce is at the principal level;
+        - You follow modern object oriented programming patterns;
+        - You list your requirements and design a simple test before implementing.
+        Review the user's request and follow these requirements.
+    postprocessor:
+      base_model: mistral
+      temperature: 0.1
+      system_prompt: |
+        You have one job: return the source code provided in the user's message. 
+        **ONLY** return the exact source code. Your response is not read by a human.
+    # Evaluators have defined system prompts to only return true / false for their domain.
+    evaluator:
+      base_model: mistral
+      temperature: 0.1
+      system_prompt: |
+        Assess if a given sample program correctly implements Fizz Buzz. 
+        The program should display numbers from 1 to n. For multiples of three, it should 
+        print "Fizz" instead of the number, for the multiples of five, it should print "Buzz", 
+        and for numbers which are multiples of both three and five, it should print "FizzBuzz".
+        Guidelines for Evaluation
+          - Correctness: Verify that the program outputs "Fizz" for multiples of 3, "Buzz" for 
+            multiples of 5, and "FizzBuzz" for numbers that are multiples of both 3 and 5. For
+            all other numbers, it should output the number itself.
+          - Range Handling: Check if the program correctly handles the range from 1 to n, where
+            n is the upper limit provided as input.
+          - Error Handling: Assess if the program includes basic error handling, such as ensuring
+            the input is a positive integer.
+
