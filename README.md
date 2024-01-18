@@ -9,8 +9,8 @@ Distribute arbitrary tasks as YAML to local or hosted language models. In MODEL 
 * macOS / Linux (Ubuntu as a distro was tested)
 * Python 3.10+
 * Depending on use case:
-  * OpenAI API key
-  * Vertex AI service account credentails `.json`
+  * [OpenAI](https://openai.com/blog/openai-api) API key
+  * Google Cloud Vertex AI [service account credentails `.json`](https://cloud.google.com/iam/docs/keys-create-delete#creating)
   * [Ollama](https://github.com/jmorganca/ollama) installed
 
 
@@ -28,8 +28,14 @@ python src/main.py -h
 ```
 
 ## Supported Providers
-* OpenAI models
-* Google Vertex AI PALM2 / Gemini models
+* OpenAI text completion models. For example,
+  * gpt-3.5-turbo
+  * gpt-4
+  * gpt-4-1106-preview
+* Google Vertex AI PALM2 / Gemini text/code completion models. For example,
+  * gemini-pro
+  * tex-unicorn@001
+  * code-bison
 * OSS models via Ollama e.g. LLaMA, Orca2, Vicuna, Mixtral8x7b, Mistral, Phi2, etc
 
 ## Task

@@ -313,7 +313,7 @@ class GoogleModel(BaseModel):
     def _set_google_credentials(self):
         if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
             key_path = input(
-                "Please enter your GCP service account credentials path: ")
+                "Please enter your GCP service account credentials (JSON) path: ")
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
 
     def _get_gcloud_project_id(self):
