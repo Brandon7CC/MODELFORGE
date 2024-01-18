@@ -129,41 +129,19 @@ tasks:
       base_model: gpt-4-1106-preview
       temperature: 0.1
       system_prompt: |
-        ...
+        Assess if a given sample program correctly implements Fizz Buzz. 
+        The program should display numbers from 1 to n. For multiples of three, it should 
+        print "Fizz" instead of the number, for the multiples of five, it should print "Buzz", 
+        and for numbers which are multiples of both three and five, it should print "FizzBuzz".
+        Guidelines for Evaluation
+          - Correctness: Verify that the program outputs "Fizz" for multiples of 3, "Buzz" for 
+            multiples of 5, and "FizzBuzz" for numbers that are multiples of both 3 and 5. For
+            all other numbers, it should output the number itself.
+          - Range Handling: Check if the program correctly handles the range from 1 to n, where
+            n is the upper limit provided as input.
+          - Error Handling: Assess if the program includes basic error handling, such as ensuring
+            the input is a positive integer.
 ```
-
-## Task
-Tasks are defined in YAML form and can be broken down into three promary components: 
-1. **Agents**: The model and system prompt chosen will do the actual implementation of your take.
-
-
-For each of these roles you'll find some models work *much* better than others. Additionally, if using OSS models via Ollama do your best to find an "instruct" model (one fine tuned for instruction following).
-
-### Agents
-> You'll want to use the best "instruct" expert model you have access to as the agent. 
-
-Agents do the actual heavy lifiting of the task's implemtation. This is done by defining a system prompt. For example, you may want to assess how well models from Google vs. OpenAI, vs. OSS compare. 
-
-### Postprocessors
-> From testing you'd ideally want to use a model similar in instruction following capability to GPT-3.5
-
-Postprocessors are optional and take the answer returned by the the agent and manipulate it in some way according to a system prompt. An example of a good postprocessor might be to extract the code from a message or turn it into JSON form.
-
-### Evaluators
-> Here you'll want to use the best "instruct" expert model you have access to to evaluate the task with.
-
-Evaluators are another crutial part of the MODEL FORGE task chain. Evaluators, like agents and postprocessors have a defined system prompt that allow them to perform an evaluation on the answer returned by the postprocessor (if one was defined) or the agent (otherwise). As an example: 
-
-> "Act as an expert C software engineer working on kernel components. You're skilled in secure development and follow best practices. Has the user correctly 
-
-Additionally, evaluators 
-
-
-
-
-
-## Example
-Check out the wiki! 
 
 ### Insperation
 This work was inspired by Google DeepMind's [FunSearch](https://deepmind.google/discover/blog/funsearch-making-new-discoveries-in-mathematical-sciences-using-large-language-models/) approach to finding a novel solution to the [cap set](https://en.wikipedia.org/wiki/Cap_set) problem. At the macro level this was done by developing [CoT (Chain of Thought)](https://blog.research.google/2022/05/language-models-perform-reasoning-via.html) based examples, repeatedly prompting PaLM2 to generate a large amounts of programs, and then evaluating those programs on several levels. 
